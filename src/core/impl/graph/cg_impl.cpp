@@ -172,8 +172,19 @@ MGB_DEFINE_OPR_CLASS(
         for (size_t i = 0; i < input().size(); ++i) {
             auto&& in = input(i)->dev_tensor();
             for (auto&& callback : m_cb[i]) {
-                // const cast for backward API compatibility
-                callback(const_cast<DeviceTensorND&>(in));
+                if (this->owner_graph()->options().comp_node_seq_record_level == 1 &&
+                    in.comp_node().device_type() == CompNode::DeviceType::CPU) {
+                    auto record_cb = [&in, &callback]() {
+                        auto comp_node = in.comp_node();
+                        comp_node.disable_dispatch();
+                        callback(const_cast<DeviceTensorND&>(in));
+                        comp_node.enable_dispatch();
+                    };
+                    in.comp_node().add_callback(record_cb);
+                } else {
+                    // const cast for backward API compatibility
+                    callback(const_cast<DeviceTensorND&>(in));
+                }
             }
         }
     }

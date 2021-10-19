@@ -232,6 +232,13 @@ void NetworkImplDft::make_output_spec() {
                             .copy_from_mge_tensor(dv);
                     out.lite_tensor->update_from_implement();
                 }
+                bool invalid_config =
+                        m_async &
+                        (m_user_config->options.comp_node_seq_record_level > 0);
+                LITE_ASSERT(
+                        !invalid_config,
+                        "Async is not allowed in callback when using Record Mode. Call "
+                        "wait() after forward() to async instead");
                 if (m_async) {
                     out.have_sync = true;
                     bool need_exec_cb = true;

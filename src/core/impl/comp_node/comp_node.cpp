@@ -659,4 +659,20 @@ void CompNode::ImplBase::add_callback(megdnn::thin_function<void()>&&) {
             locator().to_string().c_str());
 }
 
+void CompNode::ImplBase::enable_dispatch() {
+    mgb_throw(
+            MegBrainError,
+            "Unsupported add callback to "
+            "comp node %s",
+            locator().to_string().c_str());
+}
+
+void CompNode::ImplBase::disable_dispatch() {
+    mgb_throw(
+            MegBrainError,
+            "Unsupported add callback to "
+            "comp node %s",
+            locator().to_string().c_str());
+}
+
 // vim: syntax=cpp.doxygen foldmethod=marker foldmarker=f{{{,f}}}

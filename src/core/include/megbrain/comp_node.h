@@ -410,6 +410,16 @@ public:
         return m_impl->add_callback(std::move(cb));
     }
 
+    /*!
+     *  enable dispatcher
+     */
+    void enable_dispatch() { m_impl->enable_dispatch(); }
+
+    /*!
+     *  disable dispatcher so that task will be done inplace
+     */
+    void disable_dispatch() { m_impl->disable_dispatch(); }
+
     enum class Flag : uint32_t {
         //! Whether computing recorder is supported on this comp node (i.e.
         //! whether non-zero comp_node_seq_record_level is allowed)
@@ -528,6 +538,10 @@ protected:
                 cg::ComputingGraph* cg);
 
         virtual void add_callback(megdnn::thin_function<void()>&&);
+
+        virtual void enable_dispatch();
+
+        virtual void disable_dispatch();
 
         virtual uint64_t get_uid() {
             mgb_throw(MegBrainError, "get_uid is not impl yet");
