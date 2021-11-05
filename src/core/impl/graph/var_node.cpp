@@ -574,6 +574,18 @@ MemAllocPlan& VarNode::init_mem_plan(const DeviceTensorND* fixed_alloc) {
     return m_mem_plan;
 }
 
+bool VarNode::capable_shape_infer() {
+    auto&& mgr =
+            ComputingGraphImpl::downcast(owner_graph())->static_infer_manager_impl();
+    return mgr.has_shape_infer(this);
+}
+
+bool VarNode::capable_value_infer() {
+    auto&& mgr =
+            ComputingGraphImpl::downcast(owner_graph())->static_infer_manager_impl();
+    return mgr.has_value_infer(this);
+}
+
 VarNode& VarNode::add_flag(Flag flag) {
     modify_flag(flag, m_flag | flag);
     return *this;

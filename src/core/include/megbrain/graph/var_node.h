@@ -489,11 +489,15 @@ public:
     MemAllocPlan& init_mem_plan(const DeviceTensorND* fixed_alloc = nullptr);
 
     /*!
-     * \brief get the shape and value infer trait
+     * \brief check infer shape capablity by check m_static_infer_trait's shape infer
      */
-    const std::tuple<void*, void*>& get_static_infer_trait() {
-        return m_static_infer_trait;
-    }
+    bool capable_shape_infer();
+
+    /*!
+     * \brief check infer shape capablity by check m_static_infer_trait's value infer
+     */
+    bool capable_value_infer();
+
 
 private:
     //! whether its memory should be allocated by mgb system during graph
