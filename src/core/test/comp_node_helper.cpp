@@ -44,7 +44,7 @@ void run_comp_seq_rec_basic(CompNode cn, bool fake_first) {
         graph->options().fake_next_exec = true;
         graph->options().var_sanity_check_first_run = false;
     }
-    auto func = graph->compile({make_callback_copy(z, host_z, false)});
+    auto func = graph->compile({make_callback_copy(z, host_z)});
     if (fake_first) {
         func->execute();  // first exec
     }
@@ -55,7 +55,6 @@ void run_comp_seq_rec_basic(CompNode cn, bool fake_first) {
         }
         host_x->copy_from_fixlayout(*gen(host_x->shape(), cn));
         func->execute();
-        host_z.sync();
         auto expect = eval_conv_cpu<opr::Convolution>(*host_x, *host_y, param);
         MGB_ASSERT_TENSOR_NEAR(expect, host_z, 1e-3) << "iter " << iter;
     }
@@ -71,25 +70,6 @@ void run_comp_seq_rec_basic(CompNode cn, bool fake_first) {
     ASSERT_EQ(executed[2], change);
     // create new recorder, exec with recorder
     ASSERT_EQ(executed[3], change + 1);
-
-    //! then we change host_z's ptr each time and check result
-    HostTensorND host_iter;
-    host_iter.copy_from(host_z);
-    std::vector<std::shared_ptr<HostTensorND>> m_hosts(10);
-    for (size_t i = 0; i < 10; i++) {
-        m_hosts[i] = gen(host_z.shape(), host_z.comp_node());
-    }
-    iter = 0;
-    for (; iter < 10; ++iter) {
-        auto host_tmp = m_hosts[iter];
-        auto host_z_storage = host_z.storage();
-        host_z_storage.reset(
-                host_z.comp_node(), host_z_storage.size(),
-                host_tmp->storage().raw_storage());
-        func->execute();
-        host_z.sync();
-        MGB_ASSERT_TENSOR_NEAR(host_iter, host_z, 1e-3) << "iter " << iter;
-    }
 }
 
 void run_comp_seq_rec_basic_level2(CompNode cn) {

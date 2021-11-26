@@ -554,7 +554,6 @@ class CpuCompNode::CompNodeRecorderImpl final : public CompNodeBaseImpl {
     MGB_DYN_TYPE_OBJ_FINAL_DECL;
     std::shared_ptr<ThreadPool> m_thread_pool;
     std::shared_ptr<WorkerQueue> m_worker_queue;
-    bool do_task_inplace = false;
 
     //! used during comp node seq rec
     class CompSeqRecEventImpl final : public CpuDispatchableBase::EventImpl {
@@ -697,12 +696,8 @@ public:
             }
             return;
         } else {
-            if (do_task_inplace) {
-                CompNodeBaseImpl::mgb_aligned_free(ptr);
-            } else {
-                auto do_free = [ptr]() { CompNodeBaseImpl::mgb_aligned_free(ptr); };
-                m_env.cpu_env().dispatch(do_free);
-            }
+            auto do_free = [ptr]() { CompNodeBaseImpl::mgb_aligned_free(ptr); };
+            m_env.cpu_env().dispatch(do_free);
         }
     }
 
@@ -728,22 +723,14 @@ public:
         if (m_worker_queue) {
             m_worker_queue->check_exception();
         }
-        if (do_task_inplace) {
-            std::memcpy(host_ptr, device_ptr, size);
-        } else {
-            CompNodeBaseImpl::copy_to_host(host_ptr, device_ptr, size);
-        }
+        CompNodeBaseImpl::copy_to_host(host_ptr, device_ptr, size);
     }
 
     void copy_to_device(void* device_ptr, const void* host_ptr, size_t size) override {
         if (m_worker_queue) {
             m_worker_queue->check_exception();
         }
-        if (do_task_inplace) {
-            std::memcpy(device_ptr, host_ptr, size);
-        } else {
-            CompNodeBaseImpl::copy_to_device(device_ptr, host_ptr, size);
-        }
+        CompNodeBaseImpl::copy_to_device(device_ptr, host_ptr, size);
     }
 
     void peer_copy_to(
@@ -784,13 +771,7 @@ public:
                         "is implemented");
             }
         }
-        if (do_task_inplace) {
-            dest_impl->disable_dispatch();
-            dest_impl->copy_to_device(dest, src, size);
-            dest_impl->enable_dispatch();
-        } else {
-            dest_impl->copy_to_device(dest, src, size);
-        }
+        dest_impl->copy_to_device(dest, src, size);
     }
 
     std::unique_ptr<Event> create_event(size_t flags) override {
@@ -829,10 +810,6 @@ public:
             task();
         }
     }
-
-    void enable_dispatch() override { do_task_inplace = false; }
-
-    void disable_dispatch() override { do_task_inplace = true; }
 };
 MGB_DYN_TYPE_OBJ_FINAL_IMPL(CompNodeRecorderImpl);
 #if MGB_HAVE_THREAD
